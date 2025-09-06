@@ -84,9 +84,9 @@ export function MultiStepForm() {
   const { optimisticState, performOptimisticUpdate } = useOptimisticUpdates();
 
   const stepValidation = useCallback(
-    async (currentStep, targetStep) => {
-      if (targetStep <= currentStep) return true; // Allow backward navigation
-      return await validateStep(currentStep);
+    async (currentStepNum, targetStep) => {
+      if (targetStep <= currentStepNum) return true; // Allow backward navigation
+      return await validateStep(currentStepNum);
     },
     [validateStep]
   );

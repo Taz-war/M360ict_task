@@ -1,4 +1,4 @@
-import { MultiStepForm } from "./components/MultiStepForm";
+import { SimpleMultiStepForm } from "./components/SimpleMultiStepForm";
 import ErrorBoundary from "./components/ErrorBoundary";
 import "./App.css";
 
@@ -25,7 +25,7 @@ function App() {
       }}
     >
       <div className="min-h-screen bg-gray-50 py-8">
-        <MultiStepForm />
+        <SimpleMultiStepForm />
       </div>
     </ErrorBoundary>
   );

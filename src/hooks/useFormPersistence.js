@@ -3,6 +3,16 @@ import { useState, useEffect, useCallback, useRef } from "react";
 export const useFormPersistence = (form, options = {}) => {
   const { storageKey = "form-data", debounceMs = 1000, enableAutoSave = true, onSave, onLoad, onError } = options;
 
+  // Use refs for callbacks to prevent dependency issues
+  const onSaveRef = useRef(onSave);
+  const onLoadRef = useRef(onLoad);
+  const onErrorRef = useRef(onError);
+
+  // Update refs when callbacks change
+  onSaveRef.current = onSave;
+  onLoadRef.current = onLoad;
+  onErrorRef.current = onError;
+
   const [persistenceState, setPersistenceState] = useState({
     status: "idle", // 'idle', 'saving', 'saved', 'error', 'loading'
     lastSaved: null,
@@ -27,11 +37,14 @@ export const useFormPersistence = (form, options = {}) => {
           const currentValues = form.getValues();
           const mergedData = { ...currentValues, ...parsedData };
 
-          form.reset(mergedData);
+          // Set initial data first to prevent triggering the watcher
           initialDataRef.current = mergedData;
 
-          if (onLoad) {
-            onLoad(parsedData);
+          // Reset form without triggering validation
+          form.reset(mergedData, { keepDefaultValues: true });
+
+          if (onLoadRef.current) {
+            onLoadRef.current(parsedData);
           }
         } else {
           initialDataRef.current = form.getValues();
@@ -49,26 +62,32 @@ export const useFormPersistence = (form, options = {}) => {
           error: error.message,
         }));
 
-        if (onError) {
-          onError(error);
+        if (onErrorRef.current) {
+          onErrorRef.current(error);
         }
       }
     };
 
     loadSavedData();
-  }, [form, storageKey, onLoad, onError]);
+  }, [storageKey]); // Remove form, onLoad, onError from dependencies to prevent re-runs
 
   // Auto-save functionality
   useEffect(() => {
-    if (!enableAutoSave) return;
+    if (!enableAutoSave || !initialDataRef.current) return;
 
     const subscription = form.watch((data) => {
+      // Skip if data is null/undefined or if we're still loading
+      if (!data || persistenceState.status === "loading") return;
+
       const hasChanges = JSON.stringify(data) !== JSON.stringify(initialDataRef.current);
 
-      setPersistenceState((prev) => ({
-        ...prev,
-        hasUnsavedChanges: hasChanges,
-      }));
+      // Only update state if hasUnsavedChanges actually changed
+      setPersistenceState((prev) => {
+        if (prev.hasUnsavedChanges !== hasChanges) {
+          return { ...prev, hasUnsavedChanges: hasChanges };
+        }
+        return prev;
+      });
 
       if (hasChanges) {
         // Clear previous timeout
@@ -94,8 +113,8 @@ export const useFormPersistence = (form, options = {}) => {
 
             initialDataRef.current = data;
 
-            if (onSave) {
-              onSave(data);
+            if (onSaveRef.current) {
+              onSaveRef.current(data);
             }
           } catch (error) {
             setPersistenceState((prev) => ({
@@ -104,8 +123,8 @@ export const useFormPersistence = (form, options = {}) => {
               error: error.message,
             }));
 
-            if (onError) {
-              onError(error);
+            if (onErrorRef.current) {
+              onErrorRef.current(error);
             }
           }
         }, debounceMs);
@@ -118,7 +137,7 @@ export const useFormPersistence = (form, options = {}) => {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [form, enableAutoSave, debounceMs, storageKey, onSave, onError]);
+  }, [enableAutoSave, debounceMs, storageKey, persistenceState.status]); // Removed form, onSave, onError from dependencies
 
   // Manual save function
   const forceSave = useCallback(async () => {
@@ -142,8 +161,8 @@ export const useFormPersistence = (form, options = {}) => {
 
       initialDataRef.current = currentData;
 
-      if (onSave) {
-        onSave(currentData);
+      if (onSaveRef.current) {
+        onSaveRef.current(currentData);
       }
 
       return currentData;
@@ -154,8 +173,8 @@ export const useFormPersistence = (form, options = {}) => {
         error: error.message,
       }));
 
-      if (onError) {
-        onError(error);
+      if (onErrorRef.current) {
+        onErrorRef.current(error);
       }
 
       throw error;
@@ -175,8 +194,8 @@ export const useFormPersistence = (form, options = {}) => {
         error: null,
       }));
     } catch (error) {
-      if (onError) {
-        onError(error);
+      if (onErrorRef.current) {
+        onErrorRef.current(error);
       }
     }
   }, [storageKey, form, onError]);

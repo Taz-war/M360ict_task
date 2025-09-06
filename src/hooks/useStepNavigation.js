@@ -17,16 +17,19 @@ export const useStepNavigation = (totalSteps, options = {}) => {
     (newStep, direction = null) => {
       if (newStep < 1 || newStep > totalSteps) return false;
 
-      setCurrentStep(newStep);
-      setStepHistory((prev) => [...prev, newStep]);
+      setCurrentStep((prevStep) => {
+        setStepHistory((prev) => [...prev, newStep]);
 
-      if (onStepChange) {
-        onStepChange(newStep, currentStep);
-      }
+        if (onStepChange) {
+          onStepChange(newStep, prevStep);
+        }
+
+        return newStep;
+      });
 
       return true;
     },
-    [currentStep, totalSteps, onStepChange]
+    [totalSteps, onStepChange]
   );
 
   const navigateToStep = useCallback(
