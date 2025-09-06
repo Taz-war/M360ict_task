@@ -12,6 +12,8 @@ A React-based multi-step form application with comprehensive validation, dynamic
 - **Auto-save functionality** with optimistic UI updates
 - **Error boundaries** for robust error handling
 - **Responsive design** with modern UI components
+- **Optimistic UI updates** for instant feedback and smooth interactions
+- **Visual save indicators** showing real-time save status
 
 ## How to Run the Project
 
@@ -150,6 +152,26 @@ const isWeekend = (date) => {
 - Maintains validation state across steps
 - Provides real-time feedback on form completion status
 
+### 7. Optimistic UI Implementation
+
+**Challenge**: Provide instant feedback for user actions without waiting for async operations.
+
+**Solution**: Multi-layered optimistic update system:
+
+- **Form navigation**: Immediate step transitions with validation rollback
+- **Auto-save**: Instant save status updates with error recovery
+- **Field updates**: Real-time validation feedback with debouncing
+- **Form submission**: Optimistic success states with proper error handling
+
+```javascript
+const { performOptimisticUpdate } = useOptimisticUpdates();
+
+await performOptimisticUpdate("formSubmission", { status: "submitting" }, async () => submitToAPI(data), {
+  onSuccess: (result) => showSuccessMessage(),
+  onError: (error) => revertAndShowError(error),
+});
+```
+
 ## Custom Hooks
 
 ### useFormValidation
@@ -159,14 +181,56 @@ Manages form validation state across multiple steps:
 - Tracks validation status for each step
 - Provides methods to validate individual steps
 - Maintains overall form validity state
+- Optimistic validation updates for smooth UX
 
-### useAutoSave
+### useFormPersistence (Enhanced Auto-Save)
 
-Implements optimistic UI updates:
+Enhanced auto-save functionality with comprehensive state management:
 
-- Auto-saves form data to localStorage
+- Auto-saves form data to localStorage with debouncing
 - Provides visual feedback for save operations
-- Handles save errors gracefully
+- Handles save errors gracefully with retry mechanisms
+- Loads saved data on component mount
+- Warns users before leaving with unsaved changes
+
+### useStepNavigation
+
+Advanced step navigation with optimistic updates:
+
+- Manages current step state and navigation history
+- Supports optimistic navigation (immediate UI updates)
+- Validation caching for improved performance
+- Flexible navigation options (forward, backward, direct)
+- Error handling and rollback capabilities
+
+### useOptimisticUpdates
+
+Generic hook for optimistic UI patterns:
+
+- Immediate UI updates before async operations complete
+- Automatic rollback on operation failure
+- Loading state management with configurable delays
+- Support for multiple concurrent optimistic updates
+- Error handling with custom recovery strategies
+
+### useAsyncOperation
+
+Robust async operation management:
+
+- Automatic retry logic with exponential backoff
+- Operation cancellation and timeout handling
+- Loading and error state management
+- Abort controller integration for cleanup
+
+### useOptimisticField
+
+Field-level optimistic updates:
+
+- Real-time field validation with visual feedback
+- Optimistic value updates during async operations
+- Debounced validation to reduce API calls
+- Transform functions for value processing
+- Rollback capabilities on validation errors
 
 ## Assumptions Made
 
@@ -202,15 +266,27 @@ Implements optimistic UI updates:
 - **Date Ranges**: Start dates must be in the future (after today)
 - **Salary Minimums**: Based on Bangladesh minimum wage considerations
 
-## Error Handling
+## Error Handling & Boundaries
 
-The application includes comprehensive error handling:
+The application includes comprehensive error handling with multiple layers of protection:
 
-- **Field-level validation** with immediate feedback
-- **Step-level validation** preventing invalid navigation
-- **Form-level validation** on final submission
-- **Error boundaries** to catch and display React errors gracefully
-- **Auto-save error handling** with retry mechanisms
+### Error Boundaries
+
+- **Application-level Error Boundary**: Catches any unhandled React errors
+- **Form-specific Error Boundary**: Specialized error handling for form operations
+- **Graceful error recovery** with user-friendly messages
+- **Form data preservation** during error states
+- **Multiple recovery options** (retry, reset, save & retry)
+
+### Error Handling Features
+
+- **Field-level validation** with immediate feedback and optimistic updates
+- **Step-level validation** preventing invalid navigation with rollback
+- **Form-level validation** on final submission with retry logic
+- **Auto-save error handling** with automatic retry mechanisms
+- **Network error recovery** with exponential backoff
+- **Operation cancellation** to prevent race conditions
+- **Timeout handling** for long-running operations
 
 ## Future Enhancements
 
