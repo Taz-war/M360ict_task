@@ -9,7 +9,7 @@ export const SaveIndicator = ({ status, lastSaved, className, showText = true, s
         return {
           icon: Loader2,
           text: "Saving...",
-          className: "text-blue-600 animate-spin",
+          className: "text-blue-600",
           bgClassName: "bg-blue-50 border-blue-200",
         };
       case "saved":
@@ -67,15 +67,10 @@ export const SaveIndicator = ({ status, lastSaved, className, showText = true, s
   };
 
   return (
-    <div
-      className={cn(
-        "inline-flex items-center space-x-1.5 rounded-full border transition-all duration-200",
-        config.bgClassName,
-        sizeClasses[size],
-        className
-      )}
-    >
-      <Icon className={cn(iconSizes[size], config.className)} />
+    <div className="inline-flex items-center space-x-1.5 px-1.5 rounded-full border transition-all duration-200">
+      <div className={cn(config.bgClassName, sizeClasses[size], className)}>
+        <Icon className={cn(iconSizes[size], config.className)} />
+      </div>
       {showText && (
         <span className={cn("font-medium", config.className)}>
           {config.text}

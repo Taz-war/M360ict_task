@@ -36,14 +36,11 @@ export function SimpleMultiStepForm() {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      // Personal Info
       fullName: "",
       email: "",
       phone: "",
       dateOfBirth: "",
       profilePicture: null,
-
-      // Job Details
       department: "",
       positionTitle: "",
       startDate: "",
@@ -51,23 +48,17 @@ export function SimpleMultiStepForm() {
       salaryExpectation: "",
       manager: "",
       managerApproved: false,
-
-      // Skills & Preferences
       primarySkills: [],
       skillExperience: {},
       workingHoursStart: "",
       workingHoursEnd: "",
       remoteWorkPreference: 50,
       extraNotes: "",
-
-      // Emergency Contact
       emergencyContactName: "",
       emergencyRelationship: "",
       emergencyPhone: "",
       guardianName: "",
       guardianPhone: "",
-
-      // Review & Submit
       confirmInformation: false,
     },
     mode: "onChange",
@@ -79,6 +70,8 @@ export function SimpleMultiStepForm() {
 
     try {
       const currentData = form.getValues();
+      console.log(`Validating step ${currentStep} with data:`, currentData);
+
       await stepSchema.parseAsync(currentData);
 
       setStepValidationStatus((prev) => ({
@@ -86,8 +79,19 @@ export function SimpleMultiStepForm() {
         [currentStep]: true,
       }));
 
+      console.log(`Step ${currentStep} validation passed`);
       return true;
     } catch (error) {
+      console.error(`Step ${currentStep} validation failed:`, error);
+
+      // Show specific validation errors
+      if (error.errors) {
+        error.errors.forEach((err) => {
+          console.error(`Validation error on ${err.path?.join(".")}: ${err.message}`);
+        });
+      }
+
+      // Trigger validation for all fields in the current step
       const stepFields = Object.keys(stepSchemas[currentStep].shape);
       stepFields.forEach((field) => {
         form.trigger(field);
@@ -118,7 +122,6 @@ export function SimpleMultiStepForm() {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 2000));
       console.log("Form submitted:", data);
       alert("Form submitted successfully!");

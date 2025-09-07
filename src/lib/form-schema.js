@@ -1,9 +1,8 @@
 import { z } from "zod";
+import { departments, jobTypes, relationships, weekendRestrictedDepartments } from "@/data/mockData";
 
-// Helper function to validate phone format (accepts both 01537454231 and +8801537454231)
 const phoneRegex = /^(\+88)?0?1[3-9]\d{8}$/;
 
-// Helper function to validate age (must be at least 18)
 const validateAge = (dateString) => {
   const birthDate = new Date(dateString);
   const today = new Date();
@@ -16,7 +15,6 @@ const validateAge = (dateString) => {
   return age >= 18;
 };
 
-// Helper function to validate start date (not in past, max 90 days future)
 const validateStartDate = (dateString) => {
   const startDate = new Date(dateString);
   const today = new Date();
@@ -26,19 +24,20 @@ const validateStartDate = (dateString) => {
   return startDate >= today && startDate <= maxDate;
 };
 
-// Helper function to validate weekend restriction for HR/Finance
 const validateWeekendRestriction = (dateString, department) => {
-  if (!["HR", "Finance"].includes(department)) return true;
+  if (!dateString || !department) return true;
+  if (!weekendRestrictedDepartments.includes(department)) return true;
 
   const startDate = new Date(dateString);
-  const dayOfWeek = startDate.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
+  if (isNaN(startDate.getTime())) return true;
 
-  return dayOfWeek !== 5 && dayOfWeek !== 6; // Not Friday or Saturday
+  const dayOfWeek = startDate.getDay();
+
+  return dayOfWeek !== 5 && dayOfWeek !== 6;
 };
 
 export const formSchema = z
   .object({
-    // Personal Info - Step 1
     fullName: z
       .string()
       .min(1, "Full name is required")
@@ -47,9 +46,7 @@ export const formSchema = z
     phone: z.string().regex(phoneRegex, "Phone must be in format 01537454231 or +8801537454231"),
     dateOfBirth: z.string().min(1, "Date of birth is required").refine(validateAge, "Must be at least 18 years old"),
     profilePicture: z.any().optional(),
-
-    // Job Details - Step 2
-    department: z.enum(["Engineering", "Marketing", "Sales", "HR", "Finance"], {
+    department: z.enum(departments, {
       required_error: "Department is required",
     }),
     positionTitle: z.string().min(3, "Position title must be at least 3 characters"),
@@ -57,7 +54,7 @@ export const formSchema = z
       .string()
       .min(1, "Start date is required")
       .refine(validateStartDate, "Start date cannot be in the past and must be within 90 days"),
-    jobType: z.enum(["Full-time", "Part-time", "Contract"], {
+    jobType: z.enum(jobTypes, {
       required_error: "Job type is required",
     }),
     salaryExpectation: z.union([
@@ -73,32 +70,23 @@ export const formSchema = z
     ]),
     manager: z.string().min(1, "Manager selection is required"),
     managerApproved: z.boolean().optional(),
-
-    // Skills & Preferences - Step 3
     primarySkills: z.array(z.string()).min(3, "Please select at least 3 primary skills"),
     skillExperience: z.record(z.string(), z.number().min(0).max(20)),
     workingHoursStart: z.string().min(1, "Start time is required"),
     workingHoursEnd: z.string().min(1, "End time is required"),
     remoteWorkPreference: z.number().min(0).max(100),
     extraNotes: z.string().max(500, "Extra notes cannot exceed 500 characters").optional(),
-
-    // Emergency Contact - Step 4
     emergencyContactName: z.string().min(1, "Emergency contact name is required"),
-    emergencyRelationship: z.enum(["Parent", "Spouse", "Sibling", "Child", "Friend", "Other"], {
+    emergencyRelationship: z.enum(relationships, {
       required_error: "Relationship is required",
     }),
     emergencyPhone: z.string().regex(phoneRegex, "Phone must be in format 01537454231 or +8801537454231"),
-
-    // Guardian contact (conditional - if under 21)
     guardianName: z.string().optional(),
     guardianPhone: z.string().optional(),
-
-    // Review & Submit - Step 5
     confirmInformation: z.boolean().refine((val) => val === true, "You must confirm the information is correct"),
   })
   .refine(
     (data) => {
-      // Conditional validation for guardian contact if under 21
       const birthDate = new Date(data.dateOfBirth);
       const today = new Date();
       const age = today.getFullYear() - birthDate.getFullYear();
@@ -121,22 +109,22 @@ export const formSchema = z
   )
   .refine(
     (data) => {
-      // Validate salary range based on job type
       if (data.jobType === "Full-time") {
         return data.salaryExpectation >= 30000 && data.salaryExpectation <= 200000;
       } else if (data.jobType === "Contract") {
         return data.salaryExpectation >= 50 && data.salaryExpectation <= 150;
+      } else if (data.jobType === "Part-time") {
+        return data.salaryExpectation >= 15000 && data.salaryExpectation <= 80000;
       }
       return true;
     },
     {
-      message: "Salary expectation is outside the valid range",
+      message: "Salary expectation is outside the valid range for the selected job type",
       path: ["salaryExpectation"],
     }
   )
   .refine(
     (data) => {
-      // Weekend restriction for HR/Finance departments
       return validateWeekendRestriction(data.startDate, data.department);
     },
     {
@@ -146,7 +134,6 @@ export const formSchema = z
   )
   .refine(
     (data) => {
-      // Manager approval required if remote preference > 50%
       if (data.remoteWorkPreference > 50) {
         return data.managerApproved === true;
       }
@@ -177,15 +164,19 @@ export const stepSchemas = {
     })
     .refine(
       (data) => {
-        // Validate salary range based on job type for step validation
+        if (!data.salaryExpectation || !data.jobType) return true;
+
+        const salary =
+          typeof data.salaryExpectation === "string" ? parseFloat(data.salaryExpectation) : data.salaryExpectation;
+
+        if (isNaN(salary)) return false;
+
         if (data.jobType === "Full-time") {
-          const salary =
-            typeof data.salaryExpectation === "string" ? parseFloat(data.salaryExpectation) : data.salaryExpectation;
           return salary >= 30000 && salary <= 200000;
         } else if (data.jobType === "Contract") {
-          const salary =
-            typeof data.salaryExpectation === "string" ? parseFloat(data.salaryExpectation) : data.salaryExpectation;
           return salary >= 50 && salary <= 150;
+        } else if (data.jobType === "Part-time") {
+          return salary >= 15000 && salary <= 80000;
         }
         return true;
       },
@@ -196,7 +187,6 @@ export const stepSchemas = {
     )
     .refine(
       (data) => {
-        // Weekend restriction for HR/Finance departments
         return validateWeekendRestriction(data.startDate, data.department);
       },
       {
@@ -216,7 +206,6 @@ export const stepSchemas = {
     })
     .refine(
       (data) => {
-        // Manager approval required if remote preference > 50%
         if (data.remoteWorkPreference > 50) {
           return data.managerApproved === true;
         }
@@ -234,5 +223,5 @@ export const stepSchemas = {
     guardianName: formSchema.shape.guardianName,
     guardianPhone: formSchema.shape.guardianPhone,
   }),
-  5: formSchema, // Full schema for final validation
+  5: formSchema,
 };

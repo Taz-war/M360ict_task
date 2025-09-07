@@ -205,9 +205,11 @@ const skillsByDepartment = {
 ### Key Files
 
 - `src/lib/form-schema.js` - Validation schemas and business rules
+- `src/data/mockData.js` - Centralized mock data (managers, skills, departments, etc.)
 - `src/components/MultiStepForm.jsx` - Main form orchestration
-- `src/components/form-steps/` - Individual step components
+- `src/components/form-steps/` - Individual step components (simplified)
 - `src/components/ui/` - Reusable UI components
+- `src/hooks/` - Custom hooks for validation and navigation (simplified)
 
 ### Validation Strategy
 
@@ -234,3 +236,34 @@ The application runs on `http://localhost:3001` (or next available port).
 6. **Responsive Design**: Works on desktop and mobile devices
 
 All requirements have been successfully implemented with proper error handling, user feedback, and a polished user interface.
+
+## 🔄 Code Simplification Updates
+
+### Centralized Mock Data
+
+- All mock data moved to `src/data/mockData.js`
+- Includes managers, skills by department, departments, job types, and relationships
+- Helper functions for filtering data by department
+
+### Simplified Components
+
+- **JobDetailsStep**: Cleaner code with centralized data imports
+- **SkillsPreferencesStep**: Removed duplicate skills data
+- **EmergencyContactStep**: Uses centralized relationships data
+- Removed unnecessary console.logs and debug code
+- Simplified event handlers and state management
+
+### Improved Code Readability
+
+- More descriptive variable names
+- Cleaner function structures
+- Reduced code duplication
+- Better separation of concerns
+- Intermediate-friendly code structure
+
+### Maintained Functionality
+
+- All existing features work exactly the same
+- No breaking changes to user experience
+- Same validation rules and business logic
+- Preserved all form interactions and behaviors

@@ -1,5 +1,4 @@
-"use client";
-
+"use client"
 import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Form } from "@/components/ui/form";
-import { formSchema, stepSchemas } from "@/lib/form-schema";
+import { formSchema } from "@/lib/form-schema";
 import { PersonalInfoStep } from "./form-steps/PersonalInfoStep";
 import { JobDetailsStep } from "./form-steps/JobDetailsStep";
 import { SkillsPreferencesStep } from "./form-steps/SkillsPreferencesStep";
@@ -15,6 +14,7 @@ import { EmergencyContactStep } from "./form-steps/EmergencyContactStep";
 import { ReviewSubmitStep } from "./form-steps/ReviewSubmitStep";
 import { FormErrorBoundary } from "./FormErrorBoundary";
 import { SaveIndicator } from "./ui/SaveIndicator";
+import { SuccessModal } from "./ui/SuccessModal";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { useStepNavigation } from "@/hooks/useStepNavigation";
@@ -30,18 +30,16 @@ const steps = [
 
 export function MultiStepForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      // Personal Info
       fullName: "",
       email: "",
       phone: "",
       dateOfBirth: "",
       profilePicture: null,
-
-      // Job Details
       department: "",
       positionTitle: "",
       startDate: "",
@@ -49,30 +47,23 @@ export function MultiStepForm() {
       salaryExpectation: "",
       manager: "",
       managerApproved: false,
-
-      // Skills & Preferences
       primarySkills: [],
       skillExperience: {},
       workingHoursStart: "",
       workingHoursEnd: "",
       remoteWorkPreference: 50,
       extraNotes: "",
-
-      // Emergency Contact
       emergencyContactName: "",
       emergencyRelationship: "",
       emergencyPhone: "",
       guardianName: "",
       guardianPhone: "",
-
-      // Review & Submit
       confirmInformation: false,
     },
     mode: "onChange",
   });
 
-  // Custom hooks for enhanced functionality
-  const { stepValidationStatus, validateStep, validateAllSteps } = useFormValidation(form);
+  const { stepValidationStatus, validateStep } = useFormValidation(form);
 
   const persistence = useFormPersistence(form, {
     storageKey: "employee-registration-form",
@@ -85,7 +76,7 @@ export function MultiStepForm() {
 
   const stepValidation = useCallback(
     async (currentStepNum, targetStep) => {
-      if (targetStep <= currentStepNum) return true; // Allow backward navigation
+      if (targetStep <= currentStepNum) return true;
       return await validateStep(currentStepNum);
     },
     [validateStep]
@@ -96,17 +87,14 @@ export function MultiStepForm() {
     enableOptimisticNavigation: true,
   });
 
-  // Enhanced form submission with optimistic updates
   const handleFormSubmit = useCallback(
     async (data) => {
       return performOptimisticUpdate(
         "formSubmission",
         { status: "submitting", data },
         async () => {
-          // Simulate API call with realistic delay
           await new Promise((resolve) => setTimeout(resolve, 2000));
 
-          // Simulate potential failure (5% chance)
           if (Math.random() < 0.05) {
             throw new Error("Network error occurred. Please try again.");
           }
@@ -116,7 +104,6 @@ export function MultiStepForm() {
         {
           onSuccess: (result) => {
             console.log("Form submitted successfully:", result);
-            // Clear saved form data after successful submission
             persistence.clearSavedData();
           },
           onError: (error) => {
@@ -131,8 +118,8 @@ export function MultiStepForm() {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      const result = await handleFormSubmit(data);
-      alert("Form submitted successfully!");
+      await handleFormSubmit(data);
+      setShowSuccessModal(true);
     } catch (error) {
       alert(`Error submitting form: ${error.message}`);
     } finally {
@@ -148,16 +135,10 @@ export function MultiStepForm() {
       onError={(error, errorInfo) => {
         console.error("Form error:", error, errorInfo);
       }}
-      onRetry={() => {
-        navigation.clearValidationCache();
-      }}
       onReset={() => {
         form.reset();
         navigation.resetNavigation();
         persistence.clearSavedData();
-      }}
-      onForceSave={(data) => {
-        persistence.forceSave();
       }}
     >
       <div className="max-w-2xl mx-auto p-6">
@@ -178,7 +159,6 @@ export function MultiStepForm() {
               <Progress value={navigation.progress} className="w-full" />
               <p className="text-center font-medium">{steps[navigation.currentStep - 1].title}</p>
 
-              {/* Enhanced step validation indicators */}
               <div className="flex justify-center space-x-2 mt-2">
                 {steps.map((_, index) => {
                   const stepNum = index + 1;
@@ -207,7 +187,6 @@ export function MultiStepForm() {
                 })}
               </div>
 
-              {/* Navigation error display */}
               {navigation.navigationState.error && (
                 <div className="text-sm text-red-600 text-center bg-red-50 p-2 rounded">
                   {navigation.navigationState.error}
@@ -226,6 +205,7 @@ export function MultiStepForm() {
                     variant="outline"
                     onClick={navigation.prevStep}
                     disabled={!navigation.canNavigateBackward || navigation.navigationState.isNavigating}
+                    className={"cursor-pointer"}
                   >
                     Previous
                   </Button>
@@ -235,11 +215,16 @@ export function MultiStepForm() {
                       type="button"
                       onClick={navigation.nextStep}
                       disabled={navigation.navigationState.isNavigating}
+                      className={"cursor-pointer hover:bg-gray-500"}
                     >
                       {navigation.navigationState.isNavigating ? "Validating..." : "Next"}
                     </Button>
                   ) : (
-                    <Button type="submit" disabled={isSubmitting || submissionState?.status === "submitting"}>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || submissionState?.status === "submitting"}
+                      className={"cursor-pointer hover:bg-gray-500"}
+                    >
                       {submissionState?.status === "submitting"
                         ? "Submitting..."
                         : isSubmitting
@@ -253,6 +238,13 @@ export function MultiStepForm() {
           </CardContent>
         </Card>
       </div>
+
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Form Submitted Successfully!"
+        message="Your employee registration has been submitted and will be processed shortly."
+      />
     </FormErrorBoundary>
   );
 }

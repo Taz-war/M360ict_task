@@ -10,35 +10,25 @@ export const useOptimisticUpdates = () => {
     async (key, optimisticValue, asyncOperation, options = {}) => {
       const { onSuccess, onError, revertOnError = true, loadingDelay = 0 } = options;
 
-      // Store the current value for potential rollback
       const previousValue = optimisticState[key];
 
-      // Immediately update the UI with optimistic value
       setOptimisticState((prev) => ({
         ...prev,
         [key]: optimisticValue,
       }));
 
-      // Clear any previous error
       setError(null);
-
-      // Set loading state after delay (prevents flash for fast operations)
       const loadingTimeout = setTimeout(() => {
         setIsLoading(true);
       }, loadingDelay);
 
       try {
-        // Store the pending operation
         const operationId = Date.now();
         pendingUpdates.current.set(operationId, { key, previousValue });
 
-        // Perform the actual async operation
         const result = await asyncOperation();
 
-        // Clear the pending operation
         pendingUpdates.current.delete(operationId);
-
-        // Update with the actual result
         setOptimisticState((prev) => ({
           ...prev,
           [key]: result,
@@ -50,11 +40,9 @@ export const useOptimisticUpdates = () => {
 
         return result;
       } catch (err) {
-        // Handle error
         setError(err);
 
         if (revertOnError) {
-          // Revert to previous value
           setOptimisticState((prev) => ({
             ...prev,
             [key]: previousValue,

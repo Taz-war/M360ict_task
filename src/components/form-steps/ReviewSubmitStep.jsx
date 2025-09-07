@@ -1,23 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-
-// Mock managers data (same as in JobDetailsStep)
-const mockManagers = [
-  { id: "ENG001", name: "Alice Johnson", department: "Engineering" },
-  { id: "ENG002", name: "Tanvir Ahamed", department: "Engineering" },
-  { id: "ENG003", name: "Lisa Wong", department: "Engineering" },
-  { id: "MKT001", name: "Sarah Kim", department: "Marketing" },
-  { id: "MKT002", name: "John Patel", department: "Marketing" },
-  { id: "MKT003", name: "Nina Roy", department: "Marketing" },
-  { id: "SAL001", name: "David Lee", department: "Sales" },
-  { id: "SAL002", name: "Maria Gomez", department: "Sales" },
-  { id: "SAL003", name: "Rahul Sinha", department: "Sales" },
-  { id: "HR001", name: "Emma Brown", department: "HR" },
-  { id: "HR002", name: "Hasan Chowdhury", department: "HR" },
-  { id: "FIN001", name: "Olivia Green", department: "Finance" },
-  { id: "FIN002", name: "Jake Turner", department: "Finance" },
-  { id: "FIN003", name: "Nadia Rahman", department: "Finance" },
-];
+import { mockManagers } from "@/data/mockData";
 
 export function ReviewSubmitStep({ form }) {
   const formData = form.getValues();

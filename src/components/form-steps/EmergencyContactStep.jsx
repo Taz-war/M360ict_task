@@ -2,6 +2,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
+import { relationships } from "@/data/mockData";
 
 export function EmergencyContactStep({ form }) {
   const [showGuardianFields, setShowGuardianFields] = useState(false);
@@ -52,12 +53,11 @@ export function EmergencyContactStep({ form }) {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="Parent">Parent</SelectItem>
-                <SelectItem value="Spouse">Spouse</SelectItem>
-                <SelectItem value="Sibling">Sibling</SelectItem>
-                <SelectItem value="Child">Child</SelectItem>
-                <SelectItem value="Friend">Friend</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
+                {relationships.map((relationship) => (
+                  <SelectItem key={relationship} value={relationship}>
+                    {relationship}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <FormMessage />

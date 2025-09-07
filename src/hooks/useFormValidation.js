@@ -15,30 +15,23 @@ export const useFormValidation = (form) => {
       const stepSchema = stepSchemas[stepNumber];
       if (!stepSchema) return true;
 
-      try {
-        const currentData = form.getValues();
-        await stepSchema.parseAsync(currentData);
+      const currentData = form.getValues();
+      const result = await stepSchema.safeParseAsync(currentData);
 
-        // Optimistic update - immediately update validation status
-        setStepValidationStatus((prev) => ({
-          ...prev,
-          [stepNumber]: true,
-        }));
-
+      if (result.success) {
+        setStepValidationStatus((prev) => ({ ...prev, [stepNumber]: true }));
         return true;
-      } catch (error) {
-        // Trigger validation for current step fields
-        const stepFields = Object.keys(stepSchemas[stepNumber].shape);
-        stepFields.forEach((field) => {
-          form.trigger(field);
+      } else {
+        result.error.errors.forEach((err) => {
+          if (err.path?.length > 0) {
+            form.setError(err.path[0], {
+              type: "validation",
+              message: err.message,
+            });
+          }
         });
 
-        // Update validation status
-        setStepValidationStatus((prev) => ({
-          ...prev,
-          [stepNumber]: false,
-        }));
-
+        setStepValidationStatus((prev) => ({ ...prev, [stepNumber]: false }));
         return false;
       }
     },

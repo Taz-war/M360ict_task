@@ -1,6 +1,7 @@
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { allowedImageTypes } from "@/data/mockData";
 
 export function PersonalInfoStep({ form }) {
   const [profilePreview, setProfilePreview] = useState(null);
@@ -8,13 +9,11 @@ export function PersonalInfoStep({ form }) {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // Validate file type
-      if (!["image/jpeg", "image/png"].includes(file.type)) {
+      if (!allowedImageTypes.includes(file.type)) {
         form.setError("profilePicture", { message: "Only JPG and PNG files are allowed" });
         return;
       }
 
-      // Validate file size (2MB = 2 * 1024 * 1024 bytes)
       if (file.size > 2 * 1024 * 1024) {
         form.setError("profilePicture", { message: "File size must be less than 2MB" });
         return;
@@ -23,7 +22,6 @@ export function PersonalInfoStep({ form }) {
       form.setValue("profilePicture", file);
       form.clearErrors("profilePicture");
 
-      // Create preview
       const reader = new FileReader();
       reader.onload = (e) => setProfilePreview(e.target.result);
       reader.readAsDataURL(file);

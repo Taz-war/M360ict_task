@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 
 export const useStepNavigation = (totalSteps, options = {}) => {
-  const { initialStep = 1, onStepChange, onStepValidation, enableOptimisticNavigation = true } = options;
+  const { initialStep = 1, onStepChange, onStepValidation } = options;
 
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [navigationState, setNavigationState] = useState({
@@ -11,7 +11,6 @@ export const useStepNavigation = (totalSteps, options = {}) => {
   });
 
   const [stepHistory, setStepHistory] = useState([initialStep]);
-  const validationCache = useRef(new Map());
 
   const updateStep = useCallback(
     (newStep, direction = null) => {
@@ -34,7 +33,7 @@ export const useStepNavigation = (totalSteps, options = {}) => {
 
   const navigateToStep = useCallback(
     async (targetStep, options = {}) => {
-      const { skipValidation = false, force = false, optimistic = enableOptimisticNavigation } = options;
+      const { skipValidation = false } = options;
 
       if (targetStep === currentStep) return true;
       if (targetStep < 1 || targetStep > totalSteps) return false;
@@ -48,38 +47,16 @@ export const useStepNavigation = (totalSteps, options = {}) => {
       });
 
       try {
-        // For backward navigation, usually no validation needed
-        if (direction === "backward" && !force) {
+        if (direction === "backward") {
           updateStep(targetStep, direction);
           setNavigationState({ isNavigating: false, direction: null, error: null });
           return true;
         }
 
-        // For forward navigation, validate if required
         if (!skipValidation && onStepValidation) {
-          // Check cache first for performance
-          const cacheKey = `${currentStep}-${targetStep}`;
-          let isValid = validationCache.current.get(cacheKey);
-
-          if (isValid === undefined) {
-            // Optimistic navigation - update UI immediately if enabled
-            if (optimistic) {
-              updateStep(targetStep, direction);
-            }
-
-            // Perform validation
-            isValid = await onStepValidation(currentStep, targetStep);
-
-            // Cache the result
-            validationCache.current.set(cacheKey, isValid);
-          }
+          const isValid = await onStepValidation(currentStep, targetStep);
 
           if (!isValid) {
-            // Revert optimistic update if validation failed
-            if (optimistic && targetStep !== currentStep) {
-              setCurrentStep(currentStep);
-            }
-
             setNavigationState({
               isNavigating: false,
               direction: null,
@@ -89,19 +66,11 @@ export const useStepNavigation = (totalSteps, options = {}) => {
           }
         }
 
-        // If we haven't updated optimistically, update now
-        if (!optimistic || skipValidation) {
-          updateStep(targetStep, direction);
-        }
-
+        updateStep(targetStep, direction);
         setNavigationState({ isNavigating: false, direction: null, error: null });
         return true;
       } catch (error) {
-        // Revert optimistic update on error
-        if (optimistic && targetStep !== currentStep) {
-          setCurrentStep(currentStep);
-        }
-
+        console.error("Navigation error:", error);
         setNavigationState({
           isNavigating: false,
           direction: null,
@@ -110,7 +79,7 @@ export const useStepNavigation = (totalSteps, options = {}) => {
         return false;
       }
     },
-    [currentStep, totalSteps, onStepValidation, enableOptimisticNavigation, updateStep]
+    [currentStep, totalSteps, onStepValidation, updateStep]
   );
 
   const nextStep = useCallback(
@@ -138,21 +107,7 @@ export const useStepNavigation = (totalSteps, options = {}) => {
     setCurrentStep(initialStep);
     setStepHistory([initialStep]);
     setNavigationState({ isNavigating: false, direction: null, error: null });
-    validationCache.current.clear();
   }, [initialStep]);
-
-  const clearValidationCache = useCallback((stepKey = null) => {
-    if (stepKey) {
-      // Clear specific step validations
-      for (const key of validationCache.current.keys()) {
-        if (key.includes(stepKey.toString())) {
-          validationCache.current.delete(key);
-        }
-      }
-    } else {
-      validationCache.current.clear();
-    }
-  }, []);
 
   const canNavigateForward = currentStep < totalSteps;
   const canNavigateBackward = currentStep > 1;
@@ -169,6 +124,5 @@ export const useStepNavigation = (totalSteps, options = {}) => {
     prevStep,
     goToStep,
     resetNavigation,
-    clearValidationCache,
   };
 };

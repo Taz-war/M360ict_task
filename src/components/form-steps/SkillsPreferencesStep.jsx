@@ -1,67 +1,7 @@
-import { useState } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
-
-// Department-specific skills
-const skillsByDepartment = {
-  Engineering: [
-    "JavaScript",
-    "TypeScript",
-    "React",
-    "Node.js",
-    "GraphQL",
-    "Docker",
-    "CI/CD",
-    "Microservices",
-    "Unit Testing",
-  ],
-  Marketing: [
-    "SEO",
-    "Content Writing",
-    "Google Ads",
-    "Social Media Marketing",
-    "Email Marketing",
-    "Brand Management",
-    "Copywriting",
-    "Video Editing",
-  ],
-  Sales: [
-    "CRM Software",
-    "Lead Generation",
-    "Cold Calling",
-    "Upselling",
-    "Negotiation",
-    "Client Relationship Management",
-    "B2B Sales",
-    "Territory Management",
-  ],
-  HR: [
-    "Recruitment",
-    "Onboarding",
-    "Conflict Resolution",
-    "Payroll Management",
-    "Compliance",
-    "Employee Training",
-    "Performance Review",
-  ],
-  Finance: [
-    "Budgeting",
-    "Financial Analysis",
-    "Accounting",
-    "Bookkeeping",
-    "Payroll Processing",
-    "Tax Compliance",
-    "Expense Reporting",
-    "Cash Flow Management",
-  ],
-};
-
-const getAvailableSkills = (department) => {
-  return skillsByDepartment[department] || [];
-};
+import { getSkillsByDepartment } from "@/data/mockData";
 
 export function SkillsPreferencesStep({ form }) {
   const primarySkills = form.watch("primarySkills") || [];
@@ -69,20 +9,18 @@ export function SkillsPreferencesStep({ form }) {
   const remoteWorkPreference = form.watch("remoteWorkPreference") || 50;
   const department = form.watch("department");
 
-  const availableSkills = getAvailableSkills(department);
+  const availableSkills = getSkillsByDepartment(department);
 
   const handleSkillToggle = (skill) => {
     const currentSkills = [...primarySkills];
     const skillIndex = currentSkills.indexOf(skill);
 
     if (skillIndex > -1) {
-      // Remove skill
       currentSkills.splice(skillIndex, 1);
       const newExperience = { ...skillExperience };
       delete newExperience[skill];
       form.setValue("skillExperience", newExperience);
     } else {
-      // Add skill
       currentSkills.push(skill);
       form.setValue("skillExperience", { ...skillExperience, [skill]: 1 });
     }

@@ -3,70 +3,68 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
-
-// Mock managers data
-const mockManagers = [
-  { id: "ENG001", name: "Alice Johnson", department: "Engineering" },
-  { id: "ENG002", name: "Tanvir Ahamed", department: "Engineering" },
-  { id: "ENG003", name: "Lisa Wong", department: "Engineering" },
-  { id: "MKT001", name: "Sarah Kim", department: "Marketing" },
-  { id: "MKT002", name: "John Patel", department: "Marketing" },
-  { id: "MKT003", name: "Nina Roy", department: "Marketing" },
-  { id: "SAL001", name: "David Lee", department: "Sales" },
-  { id: "SAL002", name: "Maria Gomez", department: "Sales" },
-  { id: "SAL003", name: "Rahul Sinha", department: "Sales" },
-  { id: "HR001", name: "Emma Brown", department: "HR" },
-  { id: "HR002", name: "Hasan Chowdhury", department: "HR" },
-  { id: "FIN001", name: "Olivia Green", department: "Finance" },
-  { id: "FIN002", name: "Jake Turner", department: "Finance" },
-  { id: "FIN003", name: "Nadia Rahman", department: "Finance" },
-];
-
-const getManagersByDepartment = (department) => {
-  return mockManagers.filter((manager) => manager.department === department);
-};
+import { departments, jobTypes, getManagersByDepartment, weekendRestrictedDepartments } from "@/data/mockData";
 
 export function JobDetailsStep({ form }) {
   const [availableManagers, setAvailableManagers] = useState([]);
-  const watchedDepartment = form.watch("department");
-  const watchedJobType = form.watch("jobType");
-  const watchedStartDate = form.watch("startDate");
-  const remoteWorkPreference = form.watch("remoteWorkPreference") || 50;
+  const department = form.watch("department");
+  const jobType = form.watch("jobType");
+  const startDate = form.watch("startDate");
 
   useEffect(() => {
-    if (watchedDepartment) {
-      setAvailableManagers(getManagersByDepartment(watchedDepartment));
-      form.setValue("manager", ""); // Reset manager when department changes
+    if (department) {
+      const managers = getManagersByDepartment(department);
+      setAvailableManagers(managers);
+
+      const currentManager = form.getValues("manager");
+      const isValidManager = managers.some((manager) => manager.id === currentManager);
+
+      if (!isValidManager && currentManager) {
+        form.setValue("manager", "");
+        form.clearErrors("manager");
+      }
+    } else {
+      setAvailableManagers([]);
+      form.setValue("manager", "");
     }
-  }, [watchedDepartment, form]);
+  }, [department, form]);
+
+  useEffect(() => {
+    if (jobType) {
+      form.clearErrors("salaryExpectation");
+      const currentSalary = form.getValues("salaryExpectation");
+      if (currentSalary) {
+        setTimeout(() => form.trigger("salaryExpectation"), 100);
+      }
+    }
+  }, [jobType, form]);
 
   const getSalaryLabel = () => {
-    if (watchedJobType === "Full-time") {
-      return "Annual Salary ($30,000 - $200,000)";
-    } else if (watchedJobType === "Contract") {
-      return "Hourly Rate ($50 - $150)";
-    }
-    return "Salary Expectation";
+    const labels = {
+      "Full-time": "Annual Salary ($30,000 - $200,000)",
+      Contract: "Hourly Rate ($50 - $150)",
+      "Part-time": "Annual Salary ($15,000 - $80,000)",
+    };
+    return labels[jobType] || "Salary Expectation";
   };
 
   const getSalaryPlaceholder = () => {
-    if (watchedJobType === "Full-time") {
-      return "e.g., 75000";
-    } else if (watchedJobType === "Contract") {
-      return "e.g., 85";
-    }
-    return "Enter amount";
+    const placeholders = {
+      "Full-time": "e.g., 75000",
+      Contract: "e.g., 85",
+      "Part-time": "e.g., 45000",
+    };
+    return placeholders[jobType] || "Enter amount";
   };
 
   const isWeekend = (dateString) => {
     if (!dateString) return false;
     const date = new Date(dateString);
     const dayOfWeek = date.getDay();
-    return dayOfWeek === 5 || dayOfWeek === 6; // Friday or Saturday
+    return dayOfWeek === 5 || dayOfWeek === 6;
   };
 
-  const showWeekendWarning =
-    watchedDepartment && ["HR", "Finance"].includes(watchedDepartment) && isWeekend(watchedStartDate);
+  const showWeekendWarning = department && weekendRestrictedDepartments.includes(department) && isWeekend(startDate);
 
   return (
     <div className="space-y-4">
@@ -83,11 +81,11 @@ export function JobDetailsStep({ form }) {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="Engineering">Engineering</SelectItem>
-                <SelectItem value="Marketing">Marketing</SelectItem>
-                <SelectItem value="Sales">Sales</SelectItem>
-                <SelectItem value="HR">HR</SelectItem>
-                <SelectItem value="Finance">Finance</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept} value={dept}>
+                    {dept}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <FormMessage />
@@ -136,42 +134,20 @@ export function JobDetailsStep({ form }) {
             <FormLabel>Job Type *</FormLabel>
             <FormControl>
               <div className="flex flex-col space-y-2">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="full-time"
-                    name="jobType"
-                    value="Full-time"
-                    checked={field.value === "Full-time"}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <Label htmlFor="full-time">Full-time</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="part-time"
-                    name="jobType"
-                    value="Part-time"
-                    checked={field.value === "Part-time"}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <Label htmlFor="part-time">Part-time</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="contract"
-                    name="jobType"
-                    value="Contract"
-                    checked={field.value === "Contract"}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <Label htmlFor="contract">Contract</Label>
-                </div>
+                {jobTypes.map((type) => (
+                  <div key={type} className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id={type.toLowerCase().replace("-", "")}
+                      name="jobType"
+                      value={type}
+                      checked={field.value === type}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <Label htmlFor={type.toLowerCase().replace("-", "")}>{type}</Label>
+                  </div>
+                ))}
               </div>
             </FormControl>
             <FormMessage />
@@ -190,7 +166,17 @@ export function JobDetailsStep({ form }) {
                 type="number"
                 placeholder={getSalaryPlaceholder()}
                 {...field}
-                onChange={(e) => field.onChange(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  field.onChange(value);
+
+                  setTimeout(() => {
+                    form.trigger("salaryExpectation");
+                  }, 300);
+                }}
+                onBlur={() => {
+                  form.trigger("salaryExpectation");
+                }}
               />
             </FormControl>
             <FormMessage />
@@ -204,10 +190,25 @@ export function JobDetailsStep({ form }) {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Manager * (filtered by department)</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value} disabled={!watchedDepartment}>
+            <Select
+              onValueChange={(value) => {
+                field.onChange(value);
+                form.trigger("manager");
+              }}
+              value={field.value}
+              disabled={!department || availableManagers.length === 0}
+            >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder={watchedDepartment ? "Select manager" : "Select department first"} />
+                  <SelectValue
+                    placeholder={
+                      !department
+                        ? "Select department first"
+                        : availableManagers.length === 0
+                        ? "No managers available"
+                        : "Select manager"
+                    }
+                  />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
