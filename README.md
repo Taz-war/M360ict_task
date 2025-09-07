@@ -28,7 +28,7 @@ A React-based multi-step form application with comprehensive validation, dynamic
 
 ```bash
 git clone <repository-url>
-cd multi-step-form
+cd m360ict_task
 ```
 
 2. Install dependencies:
